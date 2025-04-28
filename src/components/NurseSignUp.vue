@@ -121,6 +121,7 @@
               required
               :disabled="loadingSpecialties"
               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-right"
+              @change="handleSpecialtyChange"
             >
               <option value="" disabled selected>
                 {{
@@ -140,6 +141,11 @@
             >
               لا توجد تخصصات متاحة
             </span>
+            <div v-if="selectedSpecialtyDetails" class="mt-2">
+              <p class="text-sm text-gray-600">
+                {{ selectedSpecialtyDetails.description }}
+              </p>
+            </div>
           </div>
 
           <div>
@@ -397,7 +403,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { signup } from '../api/auth';
 import { getSpecialties, type Specialty } from '../api/specialty';
@@ -412,7 +418,11 @@ interface SignUpData {
   confirmPassword: string;
   phoneNumber: string;
   address: string;
-  specialty: string;
+  specialty: {
+    _id: string;
+    name: string;
+    description?: string;
+  };
   description: string;
   role: 'nurse' | 'patient';
   personalPhoto?: File;
@@ -433,6 +443,19 @@ const idPhoto = ref<File | null>(null);
 const personalPhotoPreview = ref('');
 const businessCardPhotoPreview = ref('');
 const idPhotoPreview = ref('');
+
+// Add this computed property
+const selectedSpecialtyDetails = computed(() => {
+  if (!specialty.value) return null;
+  return specialties.value.find((s) => s._id === specialty.value);
+});
+
+// Add this method to handle specialty change
+const handleSpecialtyChange = () => {
+  if (selectedSpecialtyDetails.value?.description) {
+    description.value = selectedSpecialtyDetails.value.description;
+  }
+};
 
 // Validation schema
 const schema = yup.object({
@@ -542,6 +565,15 @@ const onSubmit = handleSubmit(async (values) => {
     isLoading.value = true;
     error.value = '';
 
+    // Find the selected specialty object
+    const selectedSpecialty = specialties.value.find(
+      (s) => s._id === values.specialty
+    );
+    if (!selectedSpecialty) {
+      error.value = 'الرجاء اختيار تخصص صحيح';
+      return;
+    }
+
     const signupData: SignUpData = {
       firstName: values.firstName,
       lastName: values.lastName,
@@ -550,8 +582,8 @@ const onSubmit = handleSubmit(async (values) => {
       confirmPassword: values.confirmPassword,
       phoneNumber: values.phoneNumber,
       address: values.address,
-      specialty: values.specialty,
-      description: values.description || '',
+      specialty: selectedSpecialty._id, // Just send the ID
+      description: selectedSpecialty.description || '', // Send the specialty description
       role: 'nurse',
       personalPhoto: personalPhoto.value || undefined,
       businessCardPhoto: businessCardPhoto.value || undefined,

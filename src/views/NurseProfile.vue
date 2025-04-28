@@ -14,7 +14,8 @@ interface Nurse {
   specialty: {
     _id: string;
     name: string;
-  } | null;
+    description?: string;
+  };
   isActive: boolean;
   address: string;
   description: string | null;
@@ -95,6 +96,12 @@ onMounted(() => {
                 </span>
                 <span v-else class="text-gray-500">لا يوجد تخصص محدد</span>
               </div>
+              <p
+                v-if="nurse?.specialty?.description"
+                class="mt-2 text-gray-600"
+              >
+                {{ nurse.specialty.description }}
+              </p>
             </div>
 
             <div class="description mb-6">
